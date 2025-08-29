@@ -1,16 +1,6 @@
-# 🚀 File Collaboration System
+# File Collaboration System
 
-A modern, real-time collaborative file editing platform built with cutting-edge technologies. Multiple users can simultaneously edit documents with live synchronization, automatic conflict resolution, and a beautiful, responsive interface.
-
-## ✨ What's New (Latest Updates)
-
-- **🔧 Fixed QuillEditor Content Corruption** - Eliminated HTML entity issues and content duplication
-- **🚀 Added Multiple Deployment Options** - Docker, GitHub Actions, Cloud platforms
-- **🛡️ Enhanced Security** - Production-ready configurations with SSL, rate limiting, and security headers
-- **📱 Improved Collaboration** - Stable real-time editing with Yjs CRDT framework
-- **🔍 Better Monitoring** - Health checks, comprehensive logging, and deployment status tracking
-
-## 🚀 Features
+##  Features
 
 ### Core Functionality
 - **Real-time Collaboration**: Multiple users can edit the same document simultaneously
@@ -21,15 +11,7 @@ A modern, real-time collaborative file editing platform built with cutting-edge 
 - **File Management**: Create, read, update, and manage collaborative documents
 - **Content Integrity**: Robust content validation and corruption prevention
 
-### Advanced Capabilities
-- **Operational Transformation**: Real-time operational transformation for seamless collaboration
-- **WebSocket Communication**: Low-latency real-time updates
-- **Database Migrations**: Automated schema evolution with Alembic
-- **Multiple Deployment Options**: Docker, GitHub Actions, Cloud platforms
-- **Production Monitoring**: Health checks, comprehensive logging, and deployment status
-- **Security Features**: SSL/TLS, rate limiting, security headers, and CORS protection
-
-## 🛠️ Tech Stack
+##  Tech Stack
 
 ### Backend
 - **Framework**: FastAPI (Python) - High-performance async web framework
@@ -63,79 +45,6 @@ A modern, real-time collaborative file editing platform built with cutting-edge 
 - Python 3.9+
 - Git
 
-## 🚀 Quick Start
-
-### Option 1: Docker Development (Recommended for Development)
-
-#### 1. Clone the Repository
-```bash
-git clone <your-repo-url>
-cd file_collaboration_project
-```
-
-#### 2. Environment Setup
-```bash
-# Copy environment template
-cp env.example .env
-
-# Edit environment variables as needed
-nano .env
-```
-
-#### 3. Start Services
-```bash
-# Start all services (database, backend, frontend, pgAdmin)
-docker-compose up -d
-
-# Or start specific services
-docker-compose up db backend frontend
-```
-
-#### 4. Access the Application
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8000
-- **API Documentation**: http://localhost:8000/docs
-- **pgAdmin**: http://localhost:5050 (admin@example.com / admin123)
-
-### Option 2: GitHub Actions + Local Docker (Recommended for Production)
-
-#### 1. Automated CI/CD with GitHub Actions
-- Push to `main` branch triggers automatic build and test
-- Frontend builds and tests automatically
-- Backend builds and tests automatically
-- Docker images are validated
-- Build artifacts are stored for 7 days
-
-#### 2. Local Deployment with Docker
-- **Development**: `docker-compose up -d`
-- **Production**: `docker-compose -f docker-compose.prod.yml up -d`
-- **Custom server**: Use the built Docker images anywhere
-
-#### 3. Benefits of This Approach
-- ✅ **No external dependencies** - Everything runs on your infrastructure
-- ✅ **Full control** - Deploy to any server, cloud, or VPS
-- ✅ **Cost-effective** - Only pay for your own hosting
-- ✅ **Secure** - No third-party access to your code
-- ✅ **Flexible** - Deploy to AWS, GCP, DigitalOcean, or your own server
-
-## 🏗️ Architecture
-
-### Service Architecture
-```
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   Frontend  │    │   Backend   │    │ PostgreSQL  │
-│   (Vue 3)   │◄──►│  (FastAPI)  │◄──►│  Database   │
-│   Port 3000 │    │  Port 8000  │    │  Port 5433  │
-└─────────────┘    └─────────────┘    └─────────────┘
-       │                   │
-       │                   │
-       ▼                   ▼
-┌─────────────┐    ┌─────────────┐
-│   pgAdmin   │    │   Logs &    │
-│  Port 5050  │    │  Monitoring │
-└─────────────┘    └─────────────┘
-```
-
 
 ### Real-time Collaboration Flow
 1. **User connects** to WebSocket endpoint
@@ -156,7 +65,7 @@ docker-compose up db backend frontend
 5. **Developer deploys locally** using Docker
 6. **Application runs** on chosen infrastructure
 
-## 🔧 Development
+##  Development
 
 ### Backend Development
 ```bash

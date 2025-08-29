@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Y-WebSocket Test</title>
+    <script src="https://unpkg.com/yjs@13.6.27/dist/yjs.js"></script>
+    <script src="https://unpkg.com/y-websocket@1.5.4/dist/y-websocket.js"></script>
+</head>
+<body>
+    <h1>Y-WebSocket Connection Test</h1>
+    <div id="status">Connecting...</div>
+    <div id="users">No users connected</div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        const usersDiv = document.getElementById('users');
+
+        try {
+            // Create Yjs document
+            const ydoc = new Y.Doc();
+
+            // Create WebSocket provider
+            const provider = new yWebSocket.WebsocketProvider(
+                'ws://127.0.0.1:1234',
+                'test-room',
+                ydoc
+            );
+
+            // Monitor connection status
+            provider.on('status', ({ status }) => {
+                statusDiv.textContent = `Status: ${status}`;
+                statusDiv.style.color = status === 'connected' ? 'green' : 'orange';
+            });
+
+            // Monitor user awareness
+            provider.awareness.on('change', () => {
+                const states = Array.from(provider.awareness.getStates().values());
+                const userCount = states.length;
+                usersDiv.textContent = `${userCount} user(s) connected`;
+            });
+
+            // Set user info
+            provider.awareness.setLocalStateField('user', {
+                name: 'Test User',
+                color: '#ff0000',
+                id: 'test-' + Math.random().toString(36).substr(2, 9)
+            });
+
+            console.log('Y-WebSocket test initialized');
+
+        } catch (error) {
+            statusDiv.textContent = `Error: ${error.message}`;
+            statusDiv.style.color = 'red';
+            console.error('Y-WebSocket test failed:', error);
+        }
+    </script>
+</body>
+</html>

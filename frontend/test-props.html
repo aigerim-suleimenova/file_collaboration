@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Props Test</title>
+</head>
+<body>
+    <h1>Props Test</h1>
+    <div id="app">
+        <div v-if="fileId">
+            <p>File ID: {{ fileId }}</p>
+            <p>Room: file-collaboration-{{ fileId }}</p>
+        </div>
+        <div v-else>
+            <p>No file ID available</p>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script>
+        const { createApp, ref, computed } = Vue;
+
+        createApp({
+            setup() {
+                const fileId = ref('8aee99ec-c500-4329-bafd-1c9f28da1045');
+
+                console.log('Test app - fileId:', fileId.value);
+
+                return {
+                    fileId
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

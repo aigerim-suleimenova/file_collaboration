@@ -1,0 +1,37 @@
+{
+  "name": "file-collaboration-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src --ext .vue,.js --fix",
+    "collab:server": "./start-collab-simple.sh",
+    "collab:server:direct": "y-websocket --port 1234 --host 127.0.0.1",
+    "collab:server:nvm": "$HOME/.nvm/versions/node/v18.20.8/bin/node ./node_modules/y-websocket/bin/server.js --port 1234 --host 127.0.0.1"
+  },
+  "dependencies": {
+    "@vueuse/core": "^10.2.1",
+    "axios": "^1.4.0",
+    "pinia": "^2.1.6",
+    "quill": "^2.0.3",
+    "quill-cursors": "^4.0.4",
+    "vue": "^3.3.4",
+    "vue-router": "^4.2.4",
+    "y-quill": "^1.0.0",
+    "y-websocket": "^1.5.4",
+    "yjs": "^13.6.27"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.2.3",
+    "@vue/eslint-config-prettier": "^8.0.0",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^8.45.0",
+    "eslint-plugin-vue": "^9.15.1",
+    "postcss": "^8.5.6",
+    "prettier": "^3.0.0",
+    "tailwindcss": "^3.4.17",
+    "vite": "^4.4.5"
+  }
+}

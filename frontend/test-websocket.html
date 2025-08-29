@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Connection Test</title>
+</head>
+<body>
+    <h1>WebSocket Connection Test</h1>
+    <div id="status">Testing connection...</div>
+    <div id="details"></div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        const detailsDiv = document.getElementById('details');
+
+        // Test basic WebSocket connection
+        function testBasicConnection() {
+            statusDiv.textContent = 'Testing basic WebSocket connection...';
+
+            try {
+                const ws = new WebSocket('ws://127.0.0.1:1234');
+
+                ws.onopen = () => {
+                    statusDiv.textContent = '✅ Basic WebSocket connection successful!';
+                    detailsDiv.innerHTML = '<p>Server is accepting WebSocket connections</p>';
+                    ws.close();
+                };
+
+                ws.onerror = (error) => {
+                    statusDiv.textContent = '❌ Basic WebSocket connection failed';
+                    detailsDiv.innerHTML = `<p>Error: ${error.message || 'Unknown error'}</p>`;
+                };
+
+                ws.onclose = () => {
+                    console.log('Basic WebSocket connection closed');
+                };
+
+            } catch (error) {
+                statusDiv.textContent = '❌ WebSocket connection error';
+                detailsDiv.innerHTML = `<p>Exception: ${error.message}</p>`;
+            }
+        }
+
+        // Test Yjs WebSocket connection
+        function testYjsConnection() {
+            statusDiv.textContent = 'Testing Yjs WebSocket connection...';
+            
+            try {
+                // Test the specific room path that's failing
+                const roomPath = 'file-collaboration-8aee99ec-c500-4329-bafd-1c9f28da1045';
+                const ws = new WebSocket(`ws://[::1]:1234/${roomPath}`);
+                
+                ws.onopen = () => {
+                    statusDiv.textContent = '✅ Yjs WebSocket connection successful!';
+                    detailsDiv.innerHTML = '<p>Room-based connection is working</p>';
+                    ws.close();
+                };
+                
+                ws.onerror = (error) => {
+                    statusDiv.textContent = '❌ Yjs WebSocket connection failed';
+                    detailsDiv.innerHTML = `<p>Room path error: ${error.message || 'Unknown error'}</p>`;
+                };
+                
+                ws.onclose = () => {
+                    console.log('Yjs WebSocket connection closed');
+                };
+                
+            } catch (error) {
+                statusDiv.textContent = '❌ Yjs WebSocket connection error';
+                detailsDiv.innerHTML = `<p>Exception: ${error.message}</p>`;
+            }
+        }
+
+        // Run tests
+        setTimeout(() => {
+            testBasicConnection();
+            setTimeout(() => {
+                testYjsConnection();
+            }, 1000);
+        }, 500);
+    </script>
+</body>
+</html>

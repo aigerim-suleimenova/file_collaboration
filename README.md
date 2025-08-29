@@ -109,24 +109,7 @@ docker-compose logs db
 docker-compose logs backend
 ```
 
-### Infrastructure Options
-```bash
-# Local Development
-docker-compose up -d
-
-# Local Production
-docker-compose -f docker-compose.prod.yml up -d
-
-# Remote Server/VPS
-ssh user@your-server
-git clone <your-repo>
-docker-compose -f docker-compose.prod.yml up -d
-
-# Cloud Platform
-# Deploy to AWS, GCP, Azure, or DigitalOcean using the same Docker images
-```
-
-## 🔐 Authentication
+##  Authentication
 
 The system uses JWT-based authentication with the following flow:
 
@@ -135,7 +118,7 @@ The system uses JWT-based authentication with the following flow:
 3. **Token Validation**: Automatic validation on protected endpoints
 4. **Password Security**: bcrypt hashing with salt rounds
 
-## 📊 API Endpoints
+##  API Endpoints
 
 ### Authentication
 - `POST /api/register` - User registration
@@ -149,71 +132,6 @@ The system uses JWT-based authentication with the following flow:
 - `PUT /api/files/{id}` - Update file content
 - `DELETE /api/files/{id}` - Delete file
 
-### WebSocket
-- `ws://localhost:8000/ws` - Real-time collaboration endpoint
-
-## 🧪 Testing
-
-### Backend Testing
-```bash
-cd backend
-# Run tests (when implemented)
-pytest
-
-# Check database connection
-python check_db.py
-
-# Verify configuration
-python check_config.py
-```
-
-### Frontend Testing
-```bash
-cd frontend
-# Lint code
-npm run lint
-
-# Build verification
-npm run build
-```
-
-## 🚀 Deployment Options
-
-### Option 1: GitHub Actions + Local Docker (Recommended)
-
-#### What GitHub Actions Does
-- **Automated Testing**: Runs tests on every push
-- **Build Validation**: Ensures code compiles correctly
-- **Docker Testing**: Validates Docker image builds
-- **Artifact Storage**: Stores build outputs for 7 days
-- **Quality Gates**: Prevents broken code from being deployed
-
-#### Local Docker Deployment
-```bash
-# Development
-docker-compose up -d
-
-# Production
-docker-compose -f docker-compose.prod.yml up -d
-
-# Or use the automated deployment script
-./deploy.sh
-```
-
-### Option 2: Self-Hosted Server/VPS
-
-#### Production Considerations
-- **Environment Variables**: Configure production database credentials
-- **SSL/TLS**: Enable HTTPS for production
-- **Database Backups**: Implement regular PostgreSQL backups
-- **Monitoring**: Add Sentry or similar error tracking
-- **Load Balancing**: Consider reverse proxy for multiple instances
-
-#### Server Deployment
-1. **Choose your server**: DigitalOcean ($5/month), AWS EC2, GCP Compute Engine
-2. **Install Docker**: `curl -fsSL https://get.docker.com | sh`
-3. **Clone your repo**: `git clone <your-repo>`
-4. **Deploy**: `docker-compose -f docker-compose.prod.yml up -d`
 
 ### Option 3: Cloud Platforms (Optional)
 
@@ -238,7 +156,7 @@ docker-compose -f docker-compose.prod.yml up -d
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+##  Acknowledgments
 
 - **Yjs team** for the excellent CRDT framework
 - **FastAPI community** for the high-performance web framework

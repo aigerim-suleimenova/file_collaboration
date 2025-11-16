@@ -1,5 +1,5 @@
 # File Collaboration System
-
+![Demo](demo.gif)
 ##  Features
 
 ### Core Functionality

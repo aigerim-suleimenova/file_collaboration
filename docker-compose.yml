@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   db:
@@ -13,12 +11,8 @@ services:
       # Keep password authentication for security
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/init_database.py:/docker-entrypoint-initdb.d/init_database.py
-      - ./pg_hba.conf:/var/lib/postgresql/data/pg_hba.conf
-      - ./postgresql.conf:/etc/postgresql/postgresql.conf
     ports:
       - "5433:5432"
-    command: postgres -c config_file=/etc/postgresql/postgresql.conf
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d file_collaboration_db"]
       interval: 10s
@@ -36,7 +30,7 @@ services:
     restart: unless-stopped
     environment:
       - POSTGRES_SERVER=db
-      - POSTGRES_PORT=5433
+      - POSTGRES_PORT=5432
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=12345678
       - POSTGRES_DB=file_collaboration_db
@@ -53,7 +47,8 @@ services:
       - backend_logs:/app/logs
     networks:
       - file_collaboration_network
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    # Applies migrations, then runs uvicorn with hot reload
+    command: sh scripts/start.sh --reload
 
   # Frontend Vue.js Service
   frontend:
@@ -63,7 +58,9 @@ services:
     container_name: file_collaboration_frontend
     restart: unless-stopped
     environment:
-      - VITE_API_BASE_URL=http://localhost:8000
+      # The browser talks only to this dev server; it proxies /api/v1 (HTTP and
+      # WebSocket) to the backend service.
+      - VITE_PROXY_TARGET=http://backend:8000
     ports:
       - "3000:3000"
     depends_on:

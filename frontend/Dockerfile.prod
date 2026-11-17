@@ -12,6 +12,13 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Build-time configuration (Vite inlines VITE_* values into the bundle; setting
+# them on the running container has no effect). Empty = same origin.
+ARG VITE_API_BASE_URL=""
+ARG VITE_COLLAB_WS=""
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL \
+    VITE_COLLAB_WS=$VITE_COLLAB_WS
+
 # Build the application
 RUN npm run build
 

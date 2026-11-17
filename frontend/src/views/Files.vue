@@ -27,9 +27,9 @@
             <h2 class="text-lg font-medium text-gray-900">Your Files</h2>
             <div class="flex items-center space-x-3">
               <button
-                @click="refreshFiles"
                 :disabled="loading"
                 class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                @click="refreshFiles"
               >
                 <svg
                   class="w-4 h-4 mr-2"
@@ -77,8 +77,8 @@
           <p class="mt-1 text-sm text-gray-500">{{ error }}</p>
           <div class="mt-6">
             <button
-              @click="refreshFiles"
               class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              @click="refreshFiles"
             >
               Try again
             </button>
@@ -203,8 +203,8 @@
               <!-- File Actions -->
               <div class="flex items-center space-x-2">
                 <button
-                  @click="viewFile(file)"
                   class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  @click="viewFile(file)"
                 >
                   <svg
                     class="w-4 h-4 mr-2"
@@ -228,8 +228,8 @@
                 </button>
 
                 <button
-                  @click="downloadFile(file)"
                   class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  @click="downloadFile(file)"
                 >
                   <svg
                     class="w-4 h-4 mr-2"
@@ -244,8 +244,8 @@
                 </button>
 
                 <button
-                  @click="shareFile(file)"
                   class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  @click="shareFile(file)"
                 >
                   <svg
                     class="w-4 h-4 mr-2"
@@ -262,9 +262,9 @@
                 <!-- Convert to Quill button for DOCX files -->
                 <button
                   v-if="file.original_format === 'docx' && !file.quill_content"
-                  @click="convertToQuill(file)"
                   :disabled="convertingFiles.has(file.id)"
                   class="inline-flex items-center px-3 py-2 border border-purple-300 shadow-sm text-sm leading-4 font-medium rounded-md text-purple-700 bg-white hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
+                  @click="convertToQuill(file)"
                 >
                   <svg
                     v-if="convertingFiles.has(file.id)"
@@ -307,8 +307,8 @@
                 <!-- Edit with Quill button for converted files -->
                 <button
                   v-if="file.original_format === 'docx' && file.quill_content"
-                  @click="router.push(`/files/${file.id}`)"
                   class="inline-flex items-center px-3 py-2 border border-green-300 shadow-sm text-sm leading-4 font-medium rounded-md text-green-700 bg-white hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                  @click="router.push(`/files/${file.id}`)"
                 >
                   <svg
                     class="w-4 h-4 mr-2"
@@ -323,8 +323,8 @@
                 </button>
 
                 <button
-                  @click="deleteFile(file)"
                   class="inline-flex items-center px-3 py-2 border border-red-300 shadow-sm text-sm leading-4 font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  @click="deleteFile(file)"
                 >
                   <svg
                     class="w-4 h-4 mr-2"
@@ -361,8 +361,8 @@
           >
             <h3 class="text-lg font-medium text-gray-900">File Viewer</h3>
             <button
-              @click="closeFileViewer"
               class="text-gray-400 hover:text-gray-600"
+              @click="closeFileViewer"
             >
               <svg
                 class="w-6 h-6"
@@ -426,8 +426,8 @@
                   class="flex-1 border-gray-300 rounded-l-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 />
                 <button
-                  @click="copyShareUrl"
                   class="inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 rounded-r-md bg-gray-50 text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  @click="copyShareUrl"
                 >
                   <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
@@ -440,15 +440,15 @@
             </div>
             <div class="flex justify-end space-x-3">
               <button
-                @click="closeShareModal"
                 class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                @click="closeShareModal"
               >
                 Cancel
               </button>
               <button
                 v-if="!shareToken"
-                @click="generateShareToken"
                 class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                @click="generateShareToken"
               >
                 Generate Link
               </button>

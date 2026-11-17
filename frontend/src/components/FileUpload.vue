@@ -14,8 +14,8 @@
         type="file"
         multiple
         class="hidden"
-        @change="handleFileSelect"
         accept="*/*"
+        @change="handleFileSelect"
       />
 
       <!-- Upload Icon -->
@@ -126,9 +126,9 @@
 
             <!-- Remove Button -->
             <button
-              @click="removeFile(index)"
               class="text-red-400 hover:text-red-600"
               :disabled="uploading"
+              @click="removeFile(index)"
             >
               <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path
@@ -190,9 +190,9 @@
       <!-- Upload All Button -->
       <div class="mt-6">
         <button
-          @click="uploadAllFiles"
           :disabled="uploading || !hasFilesToUpload"
           class="upload-all-button"
+          @click="uploadAllFiles"
         >
           <svg
             v-if="!uploading"

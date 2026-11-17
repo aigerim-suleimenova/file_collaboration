@@ -9,15 +9,15 @@
     </div>
 
     <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-      <form @submit.prevent="handleLogin" method="POST" class="space-y-6">
+      <form method="POST" class="space-y-6" @submit.prevent="handleLogin">
         <div>
           <label for="email" class="block text-sm/6 font-medium text-gray-900"
             >Email address</label
           >
           <div class="mt-2">
             <input
-              v-model="form.email"
               id="email"
+              v-model="form.email"
               type="email"
               name="email"
               required
@@ -43,8 +43,8 @@
 
           <div class="mt-2">
             <input
-              v-model="form.password"
               id="password"
+              v-model="form.password"
               type="password"
               name="password"
               required

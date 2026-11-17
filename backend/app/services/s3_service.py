@@ -1,5 +1,4 @@
 import boto3
-import os
 from botocore.exceptions import ClientError
 from typing import Optional, List
 from app.core.config import settings

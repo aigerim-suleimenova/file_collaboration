@@ -96,3 +96,44 @@ def share_token() -> Callable[..., str]:
         return create_share_token(str(file_id), expires_delta=expires)
 
     return make
+
+
+class FakeS3:
+    """In-memory stand-in for app.services.s3_service.s3_service (same method signatures)."""
+
+    METHODS = ("upload_file", "download_file", "get_file_url", "delete_file")
+
+    def __init__(self) -> None:
+        self.objects: dict[str, bytes] = {}
+
+    def upload_file(self, file_path: str, s3_key: str) -> bool:
+        with open(file_path, "rb") as f:
+            self.objects[s3_key] = f.read()
+        return True
+
+    def download_file(self, s3_key: str, local_path: str) -> bool:
+        if s3_key not in self.objects:
+            return False
+        with open(local_path, "wb") as f:
+            f.write(self.objects[s3_key])
+        return True
+
+    def get_file_url(self, s3_key: str, expires_in: int = 3600) -> str | None:
+        return f"https://fake-s3.test/{s3_key}?expires={expires_in}" if s3_key in self.objects else None
+
+    def delete_file(self, s3_key: str) -> bool:
+        return self.objects.pop(s3_key, None) is not None
+
+
+@pytest.fixture()
+def fake_s3(monkeypatch) -> FakeS3:
+    from app.services.s3_service import s3_service
+
+    fake = FakeS3()
+    for name in FakeS3.METHODS:
+        monkeypatch.setattr(s3_service, name, getattr(fake, name))
+    return fake
+
+
+def auth_header(token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"}

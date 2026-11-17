@@ -36,7 +36,13 @@
   }
   const SLOW_CONNECTION_MS = 5000
 
+  // Default collaboration endpoint: the configured backend origin if there is one
+  // (http -> ws, https -> wss), otherwise this page's own origin.
   const defaultCollabUrl = () => {
+    const apiBase = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+    if (apiBase) {
+      return `${apiBase.replace(/^http/, 'ws')}/api/v1/collab`
+    }
     const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
     return `${proto}://${window.location.host}/api/v1/collab`
   }
@@ -133,7 +139,11 @@
       const setAwarenessUser = () => {
         if (!provider) return
         const { id, name } = identity()
-        provider.awareness.setLocalStateField('user', { id, name, color: colorFor(id) })
+        provider.awareness.setLocalStateField('user', {
+          id,
+          name,
+          color: colorFor(id),
+        })
       }
 
       const setEditable = enabled => {

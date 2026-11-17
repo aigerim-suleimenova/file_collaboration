@@ -24,30 +24,32 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    op.create_table('user',
-    sa.Column('email', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False),
-    sa.Column('is_active', sa.Boolean(), nullable=False),
-    sa.Column('is_superuser', sa.Boolean(), nullable=False),
-    sa.Column('full_name', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=True),
-    sa.Column('id', sa.Uuid(), nullable=False),
-    sa.Column('hashed_password', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-    sa.PrimaryKeyConstraint('id')
+    op.create_table(
+        'user',
+        sa.Column('email', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False),
+        sa.Column('is_active', sa.Boolean(), nullable=False),
+        sa.Column('is_superuser', sa.Boolean(), nullable=False),
+        sa.Column('full_name', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=True),
+        sa.Column('id', sa.Uuid(), nullable=False),
+        sa.Column('hashed_password', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+        sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_user_email'), 'user', ['email'], unique=True)
-    op.create_table('file',
-    sa.Column('id', sa.Uuid(), nullable=False),
-    sa.Column('filename', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False),
-    sa.Column('s3_key', sqlmodel.sql.sqltypes.AutoString(length=500), nullable=True),
-    sa.Column('file_size', sa.Integer(), nullable=True),
-    sa.Column('mime_type', sqlmodel.sql.sqltypes.AutoString(length=100), nullable=True),
-    sa.Column('original_format', sqlmodel.sql.sqltypes.AutoString(length=20), nullable=True),
-    sa.Column('quill_content', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('yjs_state', sa.LargeBinary(), nullable=True),
-    sa.Column('owner_id', sa.Uuid(), nullable=False),
-    sa.Column('created_at', sa.DateTime(), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), nullable=False),
-    sa.ForeignKeyConstraint(['owner_id'], ['user.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    op.create_table(
+        'file',
+        sa.Column('id', sa.Uuid(), nullable=False),
+        sa.Column('filename', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False),
+        sa.Column('s3_key', sqlmodel.sql.sqltypes.AutoString(length=500), nullable=True),
+        sa.Column('file_size', sa.Integer(), nullable=True),
+        sa.Column('mime_type', sqlmodel.sql.sqltypes.AutoString(length=100), nullable=True),
+        sa.Column('original_format', sqlmodel.sql.sqltypes.AutoString(length=20), nullable=True),
+        sa.Column('quill_content', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column('yjs_state', sa.LargeBinary(), nullable=True),
+        sa.Column('owner_id', sa.Uuid(), nullable=False),
+        sa.Column('created_at', sa.DateTime(), nullable=False),
+        sa.Column('updated_at', sa.DateTime(), nullable=False),
+        sa.ForeignKeyConstraint(['owner_id'], ['user.id']),
+        sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_file_filename'), 'file', ['filename'], unique=False)
     op.create_index(op.f('ix_file_owner_id'), 'file', ['owner_id'], unique=False)

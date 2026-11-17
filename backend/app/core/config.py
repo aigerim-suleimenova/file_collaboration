@@ -1,4 +1,3 @@
-import secrets
 import warnings
 from typing import Annotated, Any, List, Literal
 
@@ -8,11 +7,15 @@ from pydantic import (
     HttpUrl,
     PostgresDsn,
     computed_field,
+    field_validator,
     model_validator,
 )
 from pydantic_core import MultiHostUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Self
+
+
+DEV_DEFAULT_SECRET = "changethis"
 
 
 def parse_cors(v: Any) -> list[str] | str:
@@ -31,7 +34,18 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    SECRET_KEY: str = secrets.token_urlsafe(32)
+    # Must be set explicitly outside ENVIRONMENT=local (enforced below). Locally a fixed
+    # development default keeps tokens valid across restarts and --reload.
+    SECRET_KEY: str = DEV_DEFAULT_SECRET
+
+    @field_validator("SECRET_KEY", mode="before")
+    @classmethod
+    def _empty_secret_is_unset(cls, value: Any) -> Any:
+        # pydantic-settings 2.1 does not apply env_ignore_empty, so SECRET_KEY=""
+        # would otherwise be accepted as a (very weak) real key.
+        if value is None or (isinstance(value, str) and not value.strip()):
+            return DEV_DEFAULT_SECRET
+        return value
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     API_V1_STR: str = "/api/v1"
     FRONTEND_HOST: str = "http://localhost:3000"
@@ -100,10 +114,10 @@ class Settings(BaseSettings):
     S3_BUCKET_NAME: str = "awsfilecollab"  # Updated to match your .env
 
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
-        if value == "changethis":
+        if value == DEV_DEFAULT_SECRET:
             message = (
-                f'The value of {var_name} is "changethis", '
-                "for security, please change it, at least for deployments."
+                f"{var_name} is not set, so the development default is in use. "
+                f"Set {var_name} to a unique secret value for any deployment."
             )
             if self.ENVIRONMENT == "local":
                 warnings.warn(message, stacklevel=1)

@@ -1,5 +1,4 @@
 # File Collaboration System
-![Demo](https://github.com/aigerim-suleimenova/file_collaboration/blob/4152313ba736c0afc9e93289316ddd1f2d46e7aa/demo.gif)
 ##  Features
 
 ### Core Functionality

@@ -550,14 +550,6 @@ logrocket.js
 
 # ===== DEVELOPMENT TOOLS =====
 
-# Prettier
-.prettierrc
-.prettierignore
-
-# ESLint
-.eslintrc*
-.eslintignore
-
 # Stylelint
 .stylelintrc*
 .stylelintignore

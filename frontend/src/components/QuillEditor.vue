@@ -3,30 +3,22 @@
     <!-- Collaboration Status Indicator -->
     <div
       v-if="collaborationStatus !== 'connected'"
-      class="collab-status bg-yellow-50 border border-yellow-200 rounded-t-md px-3 py-2 text-sm text-yellow-800"
+      class="collab-status border rounded-t-md px-3 py-2 text-sm"
+      :class="
+        collaborationStatus === 'denied'
+          ? 'bg-red-50 border-red-200 text-red-800'
+          : 'bg-yellow-50 border-yellow-200 text-yellow-800'
+      "
+      role="status"
     >
-      <div class="flex items-center">
-        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-          <path
-            fill-rule="evenodd"
-            d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-            clip-rule="evenodd"
-          />
-        </svg>
-        {{
-          collaborationStatus === 'timeout'
-            ? 'Collaboration server unavailable - running in local mode'
-            : 'Connecting to collaboration server...'
-        }}
-      </div>
+      {{ statusMessage }}
     </div>
-
     <div ref="editorRef" class="quill-editor"></div>
   </div>
 </template>
 
 <script>
-  import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
+  import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
   import Quill from 'quill'
   import 'quill/dist/quill.snow.css'
   import * as Y from 'yjs'
@@ -34,9 +26,46 @@
   import { QuillBinding } from 'y-quill'
   import QuillCursors from 'quill-cursors'
 
+  Quill.register('modules/cursors', QuillCursors)
+
+  // Close codes sent by the backend's /api/v1/collab endpoint.
+  const AUTH_CLOSE_MESSAGES = {
+    4001: 'Your session has expired or this link is no longer valid. Sign in again or ask for a new link.',
+    4003: "You don't have access to live editing for this document.",
+    4004: 'This document no longer exists.',
+  }
+  const SLOW_CONNECTION_MS = 5000
+
+  const defaultCollabUrl = () => {
+    const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
+    return `${proto}://${window.location.host}/api/v1/collab`
+  }
+
+  // Stable colour per user id, so a user's cursor keeps its colour across reconnects.
+  const colorFor = id => {
+    let hash = 0
+    for (const ch of String(id)) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0
+    return `hsl(${hash % 360}, 70%, 40%)`
+  }
+
+  const guestIdentity = () => {
+    let id = null
+    try {
+      id = sessionStorage.getItem('collab-guest-id')
+      if (!id) {
+        id = `guest-${Math.random().toString(36).slice(2, 10)}`
+        sessionStorage.setItem('collab-guest-id', id)
+      }
+    } catch {
+      id = id || `guest-${Math.random().toString(36).slice(2, 10)}`
+    }
+    return { id, name: 'Guest' }
+  }
+
   export default {
     name: 'QuillEditor',
     props: {
+      // Stored HTML used only to seed a document that has no collaborative state yet.
       modelValue: {
         type: String,
         default: '',
@@ -57,61 +86,60 @@
         type: String,
         required: true,
       },
-      roomName: {
+      // Exactly one of accessToken / shareToken authorizes the collaboration socket.
+      accessToken: {
         type: String,
-        default: 'default',
+        default: null,
+      },
+      shareToken: {
+        type: String,
+        default: null,
+      },
+      // { id, name } of the signed-in user; guests get an anonymous identity.
+      user: {
+        type: Object,
+        default: null,
       },
     },
     emits: ['update:modelValue', 'text-change', 'collaboration-ready'],
     setup(props, { emit }) {
       const editorRef = ref(null)
+      // connecting | slow | connected | denied
       const collaborationStatus = ref('connecting')
+      const deniedMessage = ref('')
       let quill = null
       let ydoc = null
       let provider = null
       let ytext = null
       let binding = null
+      let slowTimer = null
 
-      // Computed properties for configuration
-      const collabConfig = computed(() => {
-        const config = {
-          host: import.meta.env.VITE_COLLAB_WS || 'ws://127.0.0.1:1234',
-          room: `${props.roomName}-${props.documentId}`,
-          password: import.meta.env.VITE_COLLAB_PASSWORD || undefined,
+      const statusMessage = computed(() => {
+        switch (collaborationStatus.value) {
+          case 'denied':
+            return deniedMessage.value
+          case 'slow':
+            return 'Collaboration server unavailable. Retrying… Editing is paused until it reconnects.'
+          default:
+            return 'Connecting to collaboration server…'
         }
-        return config
       })
 
-      const setQuillContent = (content, silent = false) => {
+      const identity = () =>
+        props.shareToken || !props.user?.id
+          ? guestIdentity()
+          : { id: props.user.id, name: props.user.name || 'User' }
+
+      const setAwarenessUser = () => {
+        if (!provider) return
+        const { id, name } = identity()
+        provider.awareness.setLocalStateField('user', { id, name, color: colorFor(id) })
+      }
+
+      const setEditable = enabled => {
         if (!quill) return
-        try {
-          if (content && content.trim()) {
-            // AGGRESSIVE content cleaning to prevent all corruption
-            let cleanContent = content
-              .replace(/&lt;/g, '<')
-              .replace(/&gt;/g, '>')
-              .replace(/&amp;/g, '&')
-              .replace(/<p><p>/g, '<p>') // Remove duplicate paragraph tags
-              .replace(/<\/p><\/p>/g, '</p>') // Remove duplicate closing tags
-
-            // If content still looks corrupted, reject it entirely
-            if (
-              cleanContent.includes('&lt;') ||
-              cleanContent.includes('&gt;') ||
-              cleanContent.includes('<p><p>') ||
-              cleanContent.includes('</p></p>')
-            ) {
-              return
-            }
-
-            const delta = quill.clipboard.convert(cleanContent)
-            quill.setContents(delta, silent ? 'silent' : undefined)
-          } else {
-            quill.setContents([], silent ? 'silent' : undefined)
-          }
-        } catch (error) {
-          // Silently handle errors in production
-        }
+        if (enabled && !props.readOnly) quill.enable()
+        else quill.disable()
       }
 
       const toolbarOptions = [
@@ -131,11 +159,7 @@
         ['link', 'image'],
       ]
 
-      // Initialize Quill with cursors module
       const initializeQuill = () => {
-        // Register QuillCursors module
-        Quill.register('modules/cursors', QuillCursors)
-
         quill = new Quill(editorRef.value, {
           theme: 'snow',
           modules: {
@@ -143,253 +167,146 @@
             cursors: true,
           },
           placeholder: props.placeholder,
-          readOnly: props.readOnly,
         })
+        // Stay read-only until the shared document has synced, so nothing typed
+        // offline can race with the server state or the one-time seeding.
+        quill.disable()
 
-        // DON'T set initial content here - let Yjs handle it during collaboration setup
-        // This prevents conflicts between Quill and Yjs content initialization
-
-        // Listen for text changes
         quill.on('text-change', (delta, oldDelta, source) => {
+          // Quill escapes typed text in its HTML, so this is safe to store as-is.
+          // Never un-escape entities here: that turns typed "<tags>" into markup.
+          emit('update:modelValue', quill.root.innerHTML)
           if (source === 'user') {
-            // Get clean HTML using Quill's proper method
-            const cleanHtml = quill.root.innerHTML
-              .replace(/&lt;/g, '<')
-              .replace(/&gt;/g, '>')
-              .replace(/&amp;/g, '&')
-
-            emit('update:modelValue', cleanHtml)
             emit('text-change', { delta, oldDelta, source })
           }
         })
+      }
 
-        // Handle focus to ensure cursor position is maintained
-        quill.on('focus', () => {
-          // When user focuses, ensure cursor is at the end if no selection
-          const selection = quill.getSelection()
-          if (!selection || selection.index === 0) {
-            const length = quill.getLength()
-            if (length > 1) {
-              quill.setSelection(length - 1, 0)
-            }
+      // Seed a document that has no collaborative state yet from its stored HTML,
+      // keeping formatting. Runs once, after the first sync with the server.
+      const seedInitialContent = () => {
+        if (ytext.length > 0) return
+        const html = props.modelValue
+        if (!html || !html.trim()) return
+        // 'user' source so the y-quill binding writes it into the shared document.
+        // Quill drops 'user' changes while disabled, so enable it for the seed.
+        const wasEnabled = quill.isEnabled()
+        quill.enable()
+        quill.setContents(quill.clipboard.convert({ html }), 'user')
+        if (!wasEnabled) quill.disable()
+      }
+
+      const initializeCollaboration = () => {
+        collaborationStatus.value = 'connecting'
+        deniedMessage.value = ''
+
+        ydoc = new Y.Doc()
+        ytext = ydoc.getText('quill')
+
+        const params = props.shareToken
+          ? { share_token: props.shareToken }
+          : props.accessToken
+            ? { token: props.accessToken }
+            : {}
+
+        provider = new WebsocketProvider(
+          import.meta.env.VITE_COLLAB_WS || defaultCollabUrl(),
+          props.documentId,
+          ydoc,
+          { params, connect: false }
+        )
+        // Set presence before connecting so the first awareness update has the name.
+        setAwarenessUser()
+        binding = new QuillBinding(ytext, quill, provider.awareness)
+
+        provider.on('connection-close', event => {
+          const message = event && AUTH_CLOSE_MESSAGES[event.code]
+          if (message) {
+            // Auth failures won't fix themselves: stop reconnecting.
+            provider.disconnect()
+            clearTimeout(slowTimer)
+            deniedMessage.value = message
+            collaborationStatus.value = 'denied'
+            setEditable(false)
           }
         })
 
-        // Handle readOnly changes
-        if (props.readOnly) {
-          quill.disable()
-        } else {
-          quill.enable()
-        }
-      }
-
-      // Initialize Yjs collaboration
-      const initializeCollaboration = async () => {
-        try {
-          // Create Yjs document
-          ydoc = new Y.Doc()
-
-          // Create WebSocket provider
-          provider = new WebsocketProvider(
-            collabConfig.value.host,
-            collabConfig.value.room,
-            ydoc,
-            {
-              password: collabConfig.value.password,
-              connect: true,
-            }
-          )
-          // Get or create the shared text
-          ytext = ydoc.getText('quill')
-          // Set initial content in Yjs BEFORE creating the binding
-          if (props.modelValue !== undefined && props.modelValue !== null) {
-            // Convert HTML to plain text for Yjs storage
-            const tempDiv = document.createElement('div')
-            tempDiv.innerHTML = props.modelValue
-            const plainText = tempDiv.textContent || tempDiv.innerText || ''
-
-            // Clear Yjs and insert plain text (not HTML)
-            ytext.delete(0, ytext.length)
-            ytext.insert(0, plainText)
+        provider.on('status', ({ status }) => {
+          if (collaborationStatus.value === 'denied') return
+          if (status !== 'connected') {
+            collaborationStatus.value = 'connecting'
+            setEditable(false)
           }
+        })
 
-          // Wait for connection to be established with timeout
-          const connectionPromise = new Promise(resolve => {
-            if (provider.wsconnected) {
-              resolve()
-            } else {
-              provider.on('status', ({ status }) => {
-                if (status === 'connected') {
-                  resolve()
-                }
-              })
-            }
-          })
-
-          // Add timeout to prevent hanging
-          const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Connection timeout')), 5000)
-          })
-
-          await Promise.race([connectionPromise, timeoutPromise])
+        let seeded = false
+        provider.on('sync', isSynced => {
+          if (!isSynced || collaborationStatus.value === 'denied') return
+          clearTimeout(slowTimer)
+          if (!seeded) {
+            seeded = true
+            seedInitialContent()
+          }
           collaborationStatus.value = 'connected'
-
-          // Create Quill binding
-          binding = new QuillBinding(ytext, quill, provider.awareness)
-
-          // Ensure editor is enabled/disabled based on readOnly prop after binding
-          if (props.readOnly) {
-            quill.disable()
-          } else {
-            quill.enable()
-          }
-          // Initial sync - only if Yjs has content and Quill is empty
-          const quillText = quill.getText().trim()
-          const yjsText = ytext.toString().trim()
-
-          if (yjsText && (!quillText || quill.getLength() <= 1)) {
-            try {
-              // Yjs contains plain text, so we can set it directly
-              quill.setText(yjsText)
-            } catch (error) {
-              // Silently handle sync errors
-            }
-          }
-          // Emit collaboration ready event
-          emit('collaboration-ready', { provider, ydoc, ytext })
-        } catch (error) {
-          // Fallback to non-collaborative mode
-          emit('collaboration-ready', null)
-          collaborationStatus.value = 'timeout'
-
-          // Ensure Quill has content in fallback mode
-          if (
-            quill &&
-            props.modelValue !== undefined &&
-            props.modelValue !== null
-          ) {
-            setQuillContent(props.modelValue, true)
-          }
-
-          // Ensure editor is enabled/disabled based on readOnly prop
-          if (props.readOnly) {
-            quill.disable()
-          } else {
-            quill.enable()
-          }
-        }
-      }
-
-      // Handle awareness updates (cursor positions, user info)
-      const setupAwareness = () => {
-        if (!provider?.awareness) return
-
-        // Set user information
-        provider.awareness.setLocalStateField('user', {
-          name: 'User', // You can make this configurable
-          color: '#' + Math.floor(Math.random() * 16777215).toString(16),
-          id: Math.random().toString(36).substr(2, 9),
+          setEditable(true)
         })
+
+        slowTimer = setTimeout(() => {
+          if (collaborationStatus.value === 'connecting') {
+            collaborationStatus.value = 'slow'
+          }
+        }, SLOW_CONNECTION_MS)
+
+        provider.connect()
+        emit('collaboration-ready', { provider, ydoc, ytext })
       }
 
-      onMounted(async () => {
-        // Initialize Quill first
+      const destroyCollaboration = () => {
+        clearTimeout(slowTimer)
+        binding?.destroy()
+        binding = null
+        provider?.destroy()
+        provider = null
+        ydoc?.destroy()
+        ydoc = null
+        ytext = null
+      }
+
+      onMounted(() => {
         initializeQuill()
-
-        // Initialize collaboration
-        await initializeCollaboration()
-
-        // Setup awareness
-        setupAwareness()
+        initializeCollaboration()
       })
 
       watch(
         () => props.readOnly,
-        newValue => {
-          if (quill) {
-            if (newValue) {
-              quill.disable()
-            } else {
-              quill.enable()
-            }
-          }
-        }
+        () => setEditable(collaborationStatus.value === 'connected')
       )
 
-      // Watch for documentId changes (reinitialize collaboration)
+      // The signed-in user may load after the editor mounts.
+      watch(() => [props.user?.id, props.user?.name], setAwarenessUser)
+
+      // Switching document or credentials means a new shared document.
       watch(
-        () => props.documentId,
-        async (newId, oldId) => {
-          if (newId && newId !== oldId) {
-            // Clean up old collaboration
-            if (binding) {
-              binding.destroy()
-              binding = null
-            }
-            if (provider) {
-              provider.destroy()
-              provider = null
-            }
-
-            // Reinitialize with new document
-            await initializeCollaboration()
-            setupAwareness()
-          }
-        }
-      )
-
-      // Watch for roomName changes
-      watch(
-        () => props.roomName,
-        async (newRoom, oldRoom) => {
-          if (newRoom && newRoom !== oldRoom && props.documentId) {
-            // Clean up old collaboration
-            if (binding) {
-              binding.destroy()
-              binding = null
-            }
-            if (provider) {
-              provider.destroy()
-              provider = null
-            }
-
-            // Reinitialize with new room
-            await initializeCollaboration()
-            setupAwareness()
-          }
+        () => [props.documentId, props.accessToken, props.shareToken],
+        (next, prev) => {
+          if (next.join() === prev.join()) return
+          destroyCollaboration()
+          quill.setContents([], 'silent')
+          quill.disable()
+          initializeCollaboration()
         }
       )
 
       onBeforeUnmount(() => {
-        // Clean up Quill binding
-        if (binding) {
-          binding.destroy()
-          binding = null
-        }
-
-        // Clean up provider
-        if (provider) {
-          provider.destroy()
-          provider = null
-        }
-
-        // Clean up Yjs document
-        if (ydoc) {
-          ydoc.destroy()
-          ydoc = null
-        }
-
-        // Clean up Quill
-        if (quill) {
-          quill = null
-        }
+        destroyCollaboration()
+        quill = null
       })
 
       return {
         editorRef,
         collaborationStatus,
+        statusMessage,
 
-        // Public methods
         getQuillInstance() {
           return quill
         },
@@ -401,44 +318,6 @@
             ytext,
             binding,
             connected: provider?.wsconnected || false,
-          }
-        },
-
-        // Method to manually sync content
-        syncContent(content) {
-          if (!quill) return
-
-          if (!binding) {
-            // Before collaboration binding exists → safe to set HTML
-            const delta = quill.clipboard.convert(content || '')
-            quill.setContents(delta, 'silent')
-          } else {
-            // After binding exists, never insert HTML strings into ytext
-            // Instead, convert to Delta and update Quill
-            if (content !== undefined && content !== null) {
-              const delta = quill.clipboard.convert(content)
-              const range = quill.getSelection()
-
-              quill.updateContents(delta, 'silent')
-
-              // Restore cursor position
-              if (range) {
-                quill.setSelection(range.index, range.length)
-              }
-            }
-          }
-        },
-
-        // Emergency content reset function
-        resetContent() {
-          if (!quill) return
-
-          // Clear everything
-          quill.setContents([], 'silent')
-
-          // Clear Yjs if available
-          if (ytext) {
-            ytext.delete(0, ytext.length)
           }
         },
       }

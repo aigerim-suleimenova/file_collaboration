@@ -77,7 +77,7 @@ DATABASE_URL=postgresql://...
 **Frontend Service Variables:**
 ```
 VITE_API_BASE_URL=https://your-backend-url.onrender.com/api
-VITE_COLLAB_WS=wss://your-backend-url.onrender.com/ws
+VITE_COLLAB_WS=wss://your-backend-url.onrender.com/api/v1/collab
 ```
 
 ## Still Having Issues?

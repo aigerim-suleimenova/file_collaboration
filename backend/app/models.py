@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 
 from pydantic import BaseModel, EmailStr
+from sqlalchemy import Column, LargeBinary
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -29,6 +30,9 @@ class File(SQLModel, table=True):
     original_format: str | None = Field(default=None, max_length=20)
     # HTML content for Quill editor
     quill_content: str | None = Field(default=None)
+    # Snapshot of the collaborative Yjs document (binary update); never exposed via the API
+    yjs_state: bytes | None = Field(
+        default=None, sa_column=Column(LargeBinary, nullable=True))
     owner_id: uuid.UUID = Field(foreign_key="user.id", index=True)
     owner: User | None = Relationship(back_populates="files")
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -54,6 +58,7 @@ class TokenPayload(SQLModel):
 class UserPublic(BaseModel):
     id: uuid.UUID
     email: str  # include all fields you want to expose
+    full_name: str | None = None
     is_superuser: bool
 
 

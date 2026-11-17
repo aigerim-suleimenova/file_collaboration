@@ -6,14 +6,12 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint src --ext .vue,.js --fix",
-    "collab:server": "./start-collab-simple.sh",
-    "collab:server:direct": "y-websocket --port 1234 --host 127.0.0.1",
-    "collab:server:nvm": "$HOME/.nvm/versions/node/v18.20.8/bin/node ./node_modules/y-websocket/bin/server.js --port 1234 --host 127.0.0.1"
+    "lint": "eslint src --ext .vue,.js --fix"
   },
   "dependencies": {
     "@vueuse/core": "^10.2.1",
     "axios": "^1.4.0",
+    "dompurify": "^3.2.6",
     "pinia": "^2.1.6",
     "quill": "^2.0.3",
     "quill-cursors": "^4.0.4",

@@ -22,6 +22,11 @@ if config.config_file_name is not None:
 # target_metadata = mymodel.Base.metadata
 target_metadata = SQLModel.metadata
 
+
+def _database_url() -> str:
+    """URL from the caller (e.g. tests via Config.attributes) or from settings."""
+    return config.attributes.get("database_url") or str(settings.SQLALCHEMY_DATABASE_URI)
+
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
@@ -41,7 +46,7 @@ def run_migrations_offline() -> None:
 
     """
     # Use application settings for the database URL
-    config.set_main_option("sqlalchemy.url", str(settings.SQLALCHEMY_DATABASE_URI))
+    config.set_main_option("sqlalchemy.url", _database_url())
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
@@ -62,7 +67,7 @@ def run_migrations_online() -> None:
 
     """
     # Ensure config uses the application DB URL
-    config.set_main_option("sqlalchemy.url", str(settings.SQLALCHEMY_DATABASE_URI))
+    config.set_main_option("sqlalchemy.url", _database_url())
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",

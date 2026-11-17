@@ -9,14 +9,14 @@ from sqlmodel import Session
 
 from app import crud
 from app.api.deps import get_db
-from app.api.routes import login, users, websocket
+from app.api.routes import collab, login, users
 from app.api.routes import files
 
 api_router = APIRouter()
 api_router.include_router(login.router)
 api_router.include_router(users.router)
 api_router.include_router(files.router, prefix="/files")
-api_router.include_router(websocket.router)
+api_router.include_router(collab.router)
 
 
 @api_router.get("/public/files/{file_id}")

@@ -1,3 +1,5 @@
+> **Outdated:** real-time collaboration is now served by the backend at `/api/v1/collab/{file_id}` (authenticated, saved to Postgres). There is no separate `y-websocket` server to run. See the main README.
+
 # Y-Quill Integration with Yjs for Real-Time Collaboration
 
 This guide explains how to implement real-time collaborative editing using y-quill, Yjs, and Quill.js in your Vue 3 application.

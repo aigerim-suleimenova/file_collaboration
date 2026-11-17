@@ -112,7 +112,7 @@ You have two options:
    - Add:
    ```
    VITE_API_BASE_URL=https://your-backend-url/api
-   VITE_COLLAB_WS=wss://your-backend-url/ws
+   VITE_COLLAB_WS=wss://your-backend-url/api/v1/collab
    ```
 
 3. **Create `railway.json` for frontend** (if needed):
@@ -141,7 +141,7 @@ If you want better frontend performance:
 4. **Set environment variables:**
    ```
    VITE_API_BASE_URL=https://your-backend-url/api
-   VITE_COLLAB_WS=wss://your-backend-url/ws
+   VITE_COLLAB_WS=wss://your-backend-url/api/v1/collab
    ```
 5. **Deploy**
 

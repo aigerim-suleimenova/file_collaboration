@@ -73,7 +73,7 @@ Once backend is created:
 5. Add environment variables:
    ```
    VITE_API_BASE_URL=https://your-backend-url.onrender.com/api
-   VITE_COLLAB_WS=wss://your-backend-url.onrender.com/ws
+   VITE_COLLAB_WS=wss://your-backend-url.onrender.com/api/v1/collab
    ```
 6. Click **"Create Web Service"**
 

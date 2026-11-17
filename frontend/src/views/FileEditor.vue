@@ -334,15 +334,16 @@
                 </div>
                 <QuillEditor
                   v-if="fileId && editForm.content !== undefined"
-                  :key="`quill-${fileId}-${editForm.content ? 'has-content' : 'no-content'}`"
+                  :key="`quill-${fileId}`"
                   ref="quillEditorRef"
                   v-model="editForm.content"
                   :read-only="false"
                   :document-id="fileId"
-                  :room-name="'file-collaboration'"
+                  :access-token="shareTokenFromUrl ? null : authStore.token"
+                  :share-token="shareTokenFromUrl || null"
+                  :user="collabUser"
                   placeholder="Enter file content"
                   height="400px"
-                  @text-change="onQuillTextChange"
                   @collaboration-ready="onCollaborationReady"
                 />
                 <div
@@ -355,9 +356,7 @@
                   <p class="text-gray-600">Loading editor content...</p>
                 </div>
                 <div v-if="fileId" class="text-xs text-gray-500 mt-1">
-                  Document ID: {{ fileId }} | Room: file-collaboration-{{
-                    fileId
-                  }}
+                  Document ID: {{ fileId }}
                 </div>
               </div>
             </div>
@@ -367,8 +366,15 @@
               <div class="prose max-w-none">
                 <div
                   class="bg-gray-50 p-4 rounded-lg border min-h-[400px] whitespace-pre-wrap text-sm text-gray-700"
-                  v-html="file.content || 'No content available'"
+                  v-if="sanitizedViewContent"
+                  v-html="sanitizedViewContent"
                 ></div>
+                <div
+                  v-else
+                  class="bg-gray-50 p-4 rounded-lg border min-h-[400px] text-sm text-gray-500"
+                >
+                  No content available
+                </div>
               </div>
             </div>
           </div>
@@ -459,13 +465,13 @@
     ref,
     reactive,
     onMounted,
-    onBeforeUnmount,
     computed,
     watch,
   } from 'vue'
   import { useRouter, useRoute } from 'vue-router'
   import { useAuthStore } from '../stores/auth'
   import { filesApi } from '../services/api'
+  import DOMPurify from 'dompurify'
   import QuillEditor from '../components/QuillEditor.vue'
 
   export default {
@@ -485,7 +491,6 @@
       const isEditMode = ref(true)
       const isExporting = ref(false)
       const isConverting = ref(false)
-      const wsRef = ref(null)
       const quillEditorRef = ref(null)
 
       // Collaboration state management
@@ -558,119 +563,31 @@
         return id
       })
       const shareTokenFromUrl = computed(() => route.query.share_token)
-      const connectWebSocket = () => {
-        if (!fileId.value) return
-
-        // If using Yjs collaboration, don't create custom WebSocket
-        if (isCollaborating.value) {
-          return
-        }
-
-        const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
-        const tokenParam = authStore.token ? `?token=${authStore.token}` : ''
-        const url = `${proto}://${window.location.host}/api/v1/files/${fileId.value}/ws${tokenParam}`
-        const ws = new WebSocket(url)
-
-        ws.onopen = () => {
-          // optional: heartbeat
-          try {
-            ws.send(JSON.stringify({ type: 'ping' }))
-          } catch {
-            console.error('Failed to send ping to WebSocket')
-          }
-        }
-
-        ws.onmessage = event => {
-          try {
-            const msg = JSON.parse(event.data)
-            if (msg.type === 'live_preview') {
-              // Prefer applying Quill delta if provided
-              if (msg.delta && quillEditorRef.value?.applyDelta) {
-                quillEditorRef.value.applyDelta(msg.delta)
-                return
-              }
-              const incoming = msg.content || ''
-              if (isEditMode.value) {
-                const current = editForm.content || ''
-                if (incoming.startsWith(current)) {
-                  const delta = incoming.slice(current.length)
-                  if (delta) editForm.content = current + delta
-                } else {
-                  // Not a pure append: skip updating to avoid cursor jump
-                }
-              } else if (file.value) {
-                const currentView = file.value?.content || ''
-                if (incoming.startsWith(currentView)) {
-                  const delta = incoming.slice(currentView.length)
-                  if (delta)
-                    file.value = { ...file.value, content: currentView + delta }
-                } else {
-                  // Safe to replace in view mode
-                  file.value = { ...file.value, content: incoming }
-                }
-              }
-            }
-          } catch {
-            console.error('Failed to handle WebSocket message')
-          }
-        }
-
-        ws.onclose = () => {
-          wsRef.value = null
-        }
-
-        ws.onerror = () => {}
-
-        wsRef.value = ws
-      }
-
-      const disconnectWebSocket = () => {
-        try {
-          wsRef.value?.close()
-        } catch {
-          console.error('Failed to disconnect WebSocket')
-        }
-        wsRef.value = null
-      }
-
       // Collaboration functions
       const onCollaborationReady = state => {
         collaborationState.value = state
-        if (state) {
-          isCollaborating.value = true
-
-          // Setup user tracking if available
-          if (state.provider?.awareness) {
-            setupUserTracking(state.provider.awareness)
-          }
-
-          // Force enable the editor to ensure it's not disabled by collaboration
-          if (quillEditorRef.value?.forceEnable) {
-            quillEditorRef.value.forceEnable()
-          }
-
-          // Also sync content to ensure it's displayed
-          if (quillEditorRef.value?.syncContent && editForm.content) {
-            setTimeout(() => {
-              quillEditorRef.value.syncContent(editForm.content)
-            }, 200)
-          }
-        } else {
-          isCollaborating.value = false
-
-          // Force enable the editor in local mode
-          if (quillEditorRef.value?.forceEnable) {
-            quillEditorRef.value.forceEnable()
-          }
-
-          // Also sync content to ensure it's displayed
-          if (quillEditorRef.value?.syncContent && editForm.content) {
-            setTimeout(() => {
-              quillEditorRef.value.syncContent(editForm.content)
-            }, 200)
-          }
+        isCollaborating.value = Boolean(state)
+        if (state?.provider?.awareness) {
+          setupUserTracking(state.provider.awareness)
         }
       }
+
+      // Identity shown on this user's cursor; share-link guests get one in QuillEditor.
+      const collabUser = computed(() =>
+        authStore.user
+          ? {
+              id: String(authStore.user.id),
+              name: authStore.user.full_name || authStore.user.email,
+            }
+          : null
+      )
+
+      // Stored HTML is untrusted (any editor, incl. share-link guests, can change it):
+      // sanitize before rendering it as markup.
+      const sanitizedViewContent = computed(() => {
+        const html = file.value?.quill_content || file.value?.content || ''
+        return html ? DOMPurify.sanitize(html, { USE_PROFILES: { html: true } }) : ''
+      })
 
       const setupUserTracking = awareness => {
         console.log('Setting up user tracking')
@@ -737,15 +654,8 @@
           // Initialize edit form with current file data
           // Prefer quill_content for rich editing, fallback to regular content
           editForm.filename = file.value.filename
-          editForm.content =
-            file.value.quill_content || file.value.content || undefined
-
-          // Manually sync content to QuillEditor if it's already mounted
-          if (quillEditorRef.value?.syncContent) {
-            setTimeout(() => {
-              quillEditorRef.value.syncContent(editForm.content)
-            }, 100)
-          }
+          // Only seeds documents without collaborative state; see QuillEditor.
+          editForm.content = file.value.quill_content || file.value.content || ''
         } catch (err) {
           error.value = 'Failed to load file. Please try again.'
           console.error('Error loading file:', err)
@@ -758,7 +668,7 @@
         isEditMode.value = true
         // Reset form with current file data
         editForm.filename = file.value.filename
-        editForm.content = file.value.content || undefined
+        editForm.content = file.value.quill_content || file.value.content || ''
         error.value = null
         successMessage.value = null
       }
@@ -767,7 +677,7 @@
         isEditMode.value = false
         // Reset form
         editForm.filename = file.value.filename
-        editForm.content = file.value.content || undefined
+        editForm.content = file.value.quill_content || file.value.content || ''
         error.value = null
       }
 
@@ -842,44 +752,21 @@
           if (fileId.value) {
             console.log('Loading file')
             loadFile()
-            console.log('Connecting WebSocket')
-            connectWebSocket()
+            // Needed for the collaborator cursor label after a page reload.
+            if (!shareTokenFromUrl.value && authStore.token && !authStore.user) {
+              authStore.getCurrentUser()
+            }
           } else {
             console.log('No fileId')
           }
         }, 100)
       })
 
-      onBeforeUnmount(() => {
-        disconnectWebSocket()
-
-        // Clean up collaboration if active
-        if (quillEditorRef.value?.getCollaborationState) {
-          const collabState = quillEditorRef.value.getCollaborationState()
-          if (collabState.binding) {
-            collabState.binding.destroy()
-          }
-          if (collabState.provider) {
-            collabState.provider.destroy()
-          }
-        }
-      })
-
-      watch(
-        () => route.params.id,
-        () => {
-          disconnectWebSocket()
-          connectWebSocket()
-        }
-      )
-
       // Reload when share token changes (e.g., pasted link)
       watch(
         () => route.query.share_token,
         async () => {
           await loadFile()
-          disconnectWebSocket()
-          connectWebSocket()
         }
       )
 
@@ -888,53 +775,10 @@
         () => fileId.value,
         async (newId, oldId) => {
           if (newId && newId !== oldId) {
-            // File ID changed, reload file and reconnect
             await loadFile()
-            disconnectWebSocket()
-            connectWebSocket()
           }
         }
       )
-
-      // Watch for content changes in editForm
-      watch(
-        () => editForm.content,
-        (newContent) => {
-          // Sync content to QuillEditor when it changes
-          if (quillEditorRef.value?.syncContent && newContent !== undefined) {
-            setTimeout(() => {
-              quillEditorRef.value.syncContent(newContent)
-            }, 100)
-          }
-        }
-      )
-
-      // Send live updates using quill deltas when available
-      let sendTimer
-      const onQuillTextChange = ({ delta, source }) => {
-        if (source !== 'user') return
-
-        // If using Yjs collaboration, content syncs automatically
-        if (isCollaborating.value) {
-          return
-        }
-
-        // Fallback to custom WebSocket for non-collaborative mode
-        if (!wsRef.value || wsRef.value.readyState !== WebSocket.OPEN) return
-        clearTimeout(sendTimer)
-        sendTimer = setTimeout(() => {
-          try {
-            const payload = {
-              type: 'content_update',
-              content: editForm.content,
-            }
-            if (delta) payload.delta = delta
-            wsRef.value.send(JSON.stringify(payload))
-          } catch {
-            console.error('Failed to send content update to WebSocket')
-          }
-        }, 200)
-      }
 
       const convertToQuill = async () => {
         if (
@@ -1025,7 +869,6 @@
         shareLink,
         copyShareLink,
         createShare,
-        onQuillTextChange,
         quillEditorRef,
         convertToQuill,
         exportToDocx,
@@ -1034,6 +877,8 @@
         activeUsers,
         collaborationState,
         onCollaborationReady,
+        collabUser,
+        sanitizedViewContent,
         // computed properties
         fileId,
         // debugging

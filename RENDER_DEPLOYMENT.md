@@ -119,7 +119,7 @@ Once backend reconnects to database:
 2. **Add environment variables:**
    ```
    VITE_API_BASE_URL=https://your-backend-url.onrender.com/api
-   VITE_COLLAB_WS=wss://your-backend-url.onrender.com/ws
+   VITE_COLLAB_WS=wss://your-backend-url.onrender.com/api/v1/collab
    ```
 3. **Click "Create Web Service"**
 4. **Wait for deployment**
@@ -282,7 +282,7 @@ Save → Auto-redeploy
 **Solution:**
 ```
 Update environment variables:
-VITE_COLLAB_WS=wss://your-backend-url/ws (with wss://)
+VITE_COLLAB_WS=wss://your-backend-url/api/v1/collab (with wss://)
 ```
 
 ### Database Connection Error

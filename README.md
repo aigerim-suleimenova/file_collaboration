@@ -47,12 +47,19 @@
 
 
 ### Real-time Collaboration Flow
-1. **User connects** to WebSocket endpoint
-2. **Document changes** are captured by Quill editor
-3. **Yjs CRDT** processes and transforms operations
-4. **WebSocket** broadcasts changes to all connected users
-5. **Automatic conflict resolution** ensures consistency
-6. **Database persistence** maintains document state
+1. **The editor connects** to `WS /api/v1/collab/{file_id}` on the FastAPI backend (the same service as the REST API). It passes `?token=<access token>` for the owner, or `?share_token=<share link token>` for a guest.
+2. **The backend checks access before sending any document data.** The owner's access token or a matching, unexpired share token is accepted. Anything else is closed with `4001` (missing or invalid credentials), `4003` (no access to this file) or `4004` (no such file).
+3. **Yjs CRDT sync** (`pycrdt-websocket` on the server, `y-websocket` + `y-quill` in the browser) merges concurrent edits with formatting intact. Yjs awareness shows each collaborator's labelled cursor.
+4. **Saving:** the server saves the Yjs document state to Postgres (`file.yjs_state`) at most every 2 s while it is being edited, when the last editor leaves, and on shutdown. Reloads and restarts keep edits.
+5. **First open:** a document with no collaborative state is filled once from its stored HTML, after the first sync.
+6. **Safety:** typed markup stays text, and stored HTML is sanitized with DOMPurify before it is displayed.
+
+### Known Limitations
+- **Single backend process:** collaboration rooms live in memory, so the backend runs one uvicorn worker. Scaling out would need a shared message bus (for example Redis).
+- **Share links grant edit access** until they expire (4 h by default). Access is checked when a connection opens, and there are no viewer/editor roles yet.
+- **View mode shows the last saved HTML:** guest edits appear in the editor straight away, but in view mode only after the owner saves.
+- **Two first openers:** if two people open a never-edited document at the same moment, its initial content can be loaded twice. This can only happen once per document.
+- **Tokens travel in the WebSocket URL** (browsers can't set headers on WebSockets). They are redacted from server logs.
 
 ### CI/CD Workflow
 1. **Developer pushes code** to `main` branch
@@ -94,10 +101,9 @@ npm run dev
 
 # Build for production
 npm run build
-
-# Start collaboration server
-npm run collab:server
 ```
+
+Real-time collaboration needs no separate server. The Vite dev server proxies `/api/v1/collab` to the backend. In production, set `VITE_COLLAB_WS=wss://<backend-host>/api/v1/collab` when the frontend is hosted separately from the backend.
 
 ### Database Operations
 ```bash
@@ -131,6 +137,9 @@ The system uses JWT-based authentication with the following flow:
 - `GET /api/files/{id}` - Get file content
 - `PUT /api/files/{id}` - Update file content
 - `DELETE /api/files/{id}` - Delete file
+
+### Real-time
+- `WS /api/v1/collab/{file_id}?token=...|share_token=...` - Yjs document sync and presence (see Real-time Collaboration Flow)
 
 
 ### Option 3: Cloud Platforms (Optional)

@@ -1,3 +1,5 @@
+> **Outdated:** real-time collaboration is now served by the backend at `/api/v1/collab/{file_id}` (authenticated, saved to Postgres). There is no separate `y-websocket` server to run. See the main README.
+
 # Node.js 18 Setup for Collaboration Server
 
 ## 🚨 **Problem**

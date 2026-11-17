@@ -31,7 +31,7 @@ This guide will help you deploy your file collaboration app using:
 In your environment configuration, add:
 ```
 VITE_API_BASE_URL=https://your-backend-url.railway.app
-VITE_COLLAB_WS=wss://your-backend-url.railway.app/ws
+VITE_COLLAB_WS=wss://your-backend-url.railway.app/api/v1/collab
 ```
 
 ### 2. Backend Setup (Railway)
@@ -75,7 +75,7 @@ RAILWAY_TOKEN=your-railway-token
 RAILWAY_SERVICE_NAME=your-railway-service-name
 DATABASE_URL=your-railway-database-url
 VITE_API_BASE_URL=https://your-backend-url.railway.app
-VITE_COLLAB_WS=wss://your-backend-url.railway.app/ws
+VITE_COLLAB_WS=wss://your-backend-url.railway.app/api/v1/collab
 ```
 
 #### B. Docker Configuration

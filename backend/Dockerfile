@@ -34,4 +34,7 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 	CMD curl -f http://localhost:8000/health || exit 1
 
 # Default command
+# Keep a single worker (no --workers): real-time collaboration rooms live in this
+# process's memory (app/services/collab.py), so clients editing the same document
+# must reach the same process.
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

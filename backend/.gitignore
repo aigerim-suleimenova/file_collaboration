@@ -201,5 +201,6 @@ local_config.py
 
 # FastAPI specific
 .pytest_cache/
-test_*.py
-*_test.py
+# Ad-hoc scripts in backend/ only; the real suite in tests/ must be committed.
+/test_*.py
+/*_test.py

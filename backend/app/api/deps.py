@@ -1,5 +1,7 @@
 """Dependencies for the API"""
 
+import uuid
+
 from collections.abc import Generator
 
 from typing import Annotated, Any, cast
@@ -14,7 +16,6 @@ from app.core import security
 from app.core.config import settings
 from app.core.db import engine
 from app.models import TokenPayload, User
-from app.services.websocket_manager import FileConnectionManager
 
 reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/login/access-token"
@@ -27,14 +28,8 @@ def get_db() -> Generator[Session, None, None]:
         yield session
 
 
-def get_file_manager() -> FileConnectionManager:
-    """Dependency to get FileConnectionManager instance"""
-    return FileConnectionManager()
-
-
 SessionDep = Annotated[Session, Depends(get_db)]
 TokenDep = Annotated[str, Depends(reusable_oauth2)]
-FileManagerDep = Annotated[FileConnectionManager, Depends(get_file_manager)]
 
 
 def get_current_user(session: SessionDep, token: TokenDep) -> User:
@@ -50,7 +45,15 @@ def get_current_user(session: SessionDep, token: TokenDep) -> User:
             detail="Could not validate credentials",
         ) from exc
 
-    user = session.get(User, token_data.sub)
+    try:
+        user_id = uuid.UUID(str(token_data.sub))
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Could not validate credentials",
+        ) from exc
+
+    user = session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 

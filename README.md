@@ -2,8 +2,6 @@
 
 [![CI](https://github.com/aigerim-suleimenova/file_collaboration/actions/workflows/ci.yml/badge.svg?branch=prod)](https://github.com/aigerim-suleimenova/file_collaboration/actions/workflows/ci.yml)
 
-![Demo](https://github.com/aigerim-suleimenova/file_collaboration/blob/4152313ba736c0afc9e93289316ddd1f2d46e7aa/demo.gif)
-
 A real-time collaborative rich-text editor. Upload a document (HTML or DOCX), edit it in the browser, and share a link so others can edit with you live. You see each other's cursors, and concurrent edits merge without conflicts.
 
 ## Features

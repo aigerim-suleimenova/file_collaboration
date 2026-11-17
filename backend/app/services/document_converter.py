@@ -1,14 +1,12 @@
 """Document conversion service for DOCX <-> HTML conversion"""
 
-import io
 import tempfile
 import os
-from typing import Optional, Tuple
-from pathlib import Path
+from typing import Tuple
 
 try:
     import mammoth
-    from docx import Document
+    import docx  # noqa: F401  (availability check for python-docx)
     from html2docx import html2docx
     CONVERSION_AVAILABLE = True
 except ImportError:

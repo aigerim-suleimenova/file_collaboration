@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from typing import Annotated, Any
 
 from fastapi import Depends
@@ -7,7 +8,6 @@ from sqlmodel import Session, select
 from app.api.deps import get_db
 from app.core.security import get_password_hash, verify_password
 from app.models import FileCreate, FileUpdate, File, User, UserCreate
-from app.services.s3_service import s3_service
 
 SessionDep = Annotated[Session, Depends(get_db)]
 
@@ -93,6 +93,7 @@ def update_file_for_user(
         update_data["mime_type"] = file_in.mime_type
     for key, value in update_data.items():
         setattr(file, key, value)
+    file.updated_at = datetime.utcnow()
     session.add(file)
     session.commit()
     session.refresh(file)

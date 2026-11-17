@@ -3,11 +3,10 @@ import os
 from typing import List
 from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
-from fastapi.responses import FileResponse
 from sqlmodel import Session
 
 from app.api.deps import get_db, CurrentUser
-from app.models import File as FileModel, FileCreate, FileUpdate, FilePublic
+from app.models import FileCreate, FileUpdate, FilePublic
 from app.crud import (
     create_file_for_user,
     get_files_for_user,
@@ -196,6 +195,26 @@ def get_file(
     )
 
 
+@router.put("/{file_id}", response_model=FilePublic)
+def update_file(
+    file_id: uuid.UUID,
+    file_in: FileUpdate,
+    current_user: CurrentUser,
+    db: Session = Depends(get_db),
+):
+    """Update file metadata (filename, MIME type). Used by the editor's Save.
+
+    Document content is saved separately (live collaboration state and
+    /update-quill-content); unknown fields such as "content" are ignored.
+    """
+    updated = update_file_for_user(
+        db, owner_id=current_user.id, file_id=file_id, file_in=file_in
+    )
+    if not updated:
+        raise HTTPException(status_code=404, detail="File not found")
+    return updated
+
+
 @router.get("/{file_id}/download")
 def download_file(
     file_id: uuid.UUID,
@@ -361,7 +380,6 @@ async def update_file_content(
             buffer.write(content)
 
         # Get new file info
-        new_file_size = len(content)
         new_mime_type = file.content_type or existing_file.mime_type
 
         # Upload new content to S3 (overwrites existing)
@@ -388,6 +406,10 @@ async def update_file_content(
         if not updated_file:
             raise HTTPException(
                 status_code=500, detail="Failed to update file metadata")
+
+        updated_file.file_size = len(content)
+        db.add(updated_file)
+        db.commit()
 
         return {"message": "File content updated successfully", "filename": updated_file.filename}
 

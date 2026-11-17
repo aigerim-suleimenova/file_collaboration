@@ -32,8 +32,8 @@
                   authStore.user?.email
                 }}</span>
                 <button
-                  @click="handleLogout"
                   class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                  @click="handleLogout"
                 >
                   Logout
                 </button>
@@ -75,40 +75,40 @@
           </div>
           <div class="flex space-x-3">
             <button
-              @click="openShareModal"
               class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+              @click="openShareModal"
             >
               Share
             </button>
             <button
               v-if="!isEditMode && !shareTokenFromUrl"
-              @click="toggleEditMode"
               class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+              @click="toggleEditMode"
             >
               Edit
             </button>
             <button
               v-if="file?.quill_content && !shareTokenFromUrl"
-              @click="exportToDocx"
               :disabled="isExporting"
               class="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-md text-sm font-medium"
+              @click="exportToDocx"
             >
               {{ isExporting ? 'Exporting...' : 'Export to DOCX' }}
             </button>
             <template v-else>
               <button
                 v-if="!shareTokenFromUrl"
-                @click="saveFile"
                 :disabled="isLoading"
                 class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-md text-sm font-medium"
+                @click="saveFile"
               >
                 {{ isLoading ? 'Saving...' : 'Save' }}
               </button>
               <button
                 v-if="!shareTokenFromUrl"
-                @click="cancelEdit"
                 :disabled="isLoading"
                 class="bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-md text-sm font-medium"
+                @click="cancelEdit"
               >
                 Cancel
               </button>
@@ -272,9 +272,9 @@
                         text editing...
                       </p>
                       <button
-                        @click="convertToQuill"
                         :disabled="isConverting"
                         class="mt-2 inline-flex items-center px-3 py-1 border border-yellow-300 rounded-md text-xs font-medium text-yellow-700 bg-white hover:bg-yellow-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 disabled:opacity-50"
+                        @click="convertToQuill"
                       >
                         <svg
                           v-if="isConverting"
@@ -364,11 +364,14 @@
             <!-- View Mode -->
             <div v-else>
               <div class="prose max-w-none">
+                <!-- Safe: sanitizedViewContent is passed through DOMPurify (see setup). -->
+                <!-- eslint-disable vue/no-v-html -->
                 <div
-                  class="bg-gray-50 p-4 rounded-lg border min-h-[400px] whitespace-pre-wrap text-sm text-gray-700"
                   v-if="sanitizedViewContent"
+                  class="bg-gray-50 p-4 rounded-lg border min-h-[400px] whitespace-pre-wrap text-sm text-gray-700"
                   v-html="sanitizedViewContent"
                 ></div>
+                <!-- eslint-enable vue/no-v-html -->
                 <div
                   v-else
                   class="bg-gray-50 p-4 rounded-lg border min-h-[400px] text-sm text-gray-500"
@@ -429,9 +432,9 @@
           />
           <div class="flex justify-end space-x-2">
             <button
-              @click="createShare"
               :disabled="shareLoading || !!shareToken"
               class="bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white px-4 py-2 rounded-md text-sm font-medium"
+              @click="createShare"
             >
               {{
                 shareLoading
@@ -442,14 +445,14 @@
               }}
             </button>
             <button
-              @click="copyShareLink"
               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+              @click="copyShareLink"
             >
               Copy link
             </button>
             <button
-              @click="closeShareModal"
               class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+              @click="closeShareModal"
             >
               Close
             </button>
@@ -461,13 +464,7 @@
 </template>
 
 <script>
-  import {
-    ref,
-    reactive,
-    onMounted,
-    computed,
-    watch,
-  } from 'vue'
+  import { ref, reactive, onMounted, computed, watch } from 'vue'
   import { useRouter, useRoute } from 'vue-router'
   import { useAuthStore } from '../stores/auth'
   import { filesApi } from '../services/api'
@@ -586,7 +583,9 @@
       // sanitize before rendering it as markup.
       const sanitizedViewContent = computed(() => {
         const html = file.value?.quill_content || file.value?.content || ''
-        return html ? DOMPurify.sanitize(html, { USE_PROFILES: { html: true } }) : ''
+        return html
+          ? DOMPurify.sanitize(html, { USE_PROFILES: { html: true } })
+          : ''
       })
 
       const setupUserTracking = awareness => {
@@ -655,7 +654,8 @@
           // Prefer quill_content for rich editing, fallback to regular content
           editForm.filename = file.value.filename
           // Only seeds documents without collaborative state; see QuillEditor.
-          editForm.content = file.value.quill_content || file.value.content || ''
+          editForm.content =
+            file.value.quill_content || file.value.content || ''
         } catch (err) {
           error.value = 'Failed to load file. Please try again.'
           console.error('Error loading file:', err)
@@ -753,7 +753,11 @@
             console.log('Loading file')
             loadFile()
             // Needed for the collaborator cursor label after a page reload.
-            if (!shareTokenFromUrl.value && authStore.token && !authStore.user) {
+            if (
+              !shareTokenFromUrl.value &&
+              authStore.token &&
+              !authStore.user
+            ) {
               authStore.getCurrentUser()
             }
           } else {

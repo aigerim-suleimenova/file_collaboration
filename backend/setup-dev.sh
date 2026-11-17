@@ -76,8 +76,8 @@ else
 fi
 
 # Initialize database
-echo "🗄️ Initializing database..."
-python3 init_database.py
+echo "🗄️ Applying database migrations..."
+alembic upgrade head
 
 echo ""
 echo "🎉 Development environment setup complete!"

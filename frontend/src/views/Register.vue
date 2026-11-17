@@ -9,7 +9,7 @@
     </div>
 
     <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-      <form @submit.prevent="handleRegister" method="POST" class="space-y-6">
+      <form method="POST" class="space-y-6" @submit.prevent="handleRegister">
         <div>
           <label
             for="full_name"
@@ -18,8 +18,8 @@
           >
           <div class="mt-2">
             <input
-              v-model="form.full_name"
               id="full_name"
+              v-model="form.full_name"
               type="text"
               name="full_name"
               required
@@ -38,8 +38,8 @@
           >
           <div class="mt-2">
             <input
-              v-model="form.email"
               id="email"
+              v-model="form.email"
               type="email"
               name="email"
               required
@@ -62,8 +62,8 @@
           </div>
           <div class="mt-2">
             <input
-              v-model="form.password"
               id="password"
+              v-model="form.password"
               type="password"
               name="password"
               required
@@ -86,8 +86,8 @@
           </div>
           <div class="mt-2">
             <input
-              v-model="form.confirmPassword"
               id="confirmPassword"
+              v-model="form.confirmPassword"
               type="password"
               name="confirmPassword"
               required

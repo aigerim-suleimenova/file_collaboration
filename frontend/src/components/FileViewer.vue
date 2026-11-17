@@ -48,8 +48,8 @@
 
         <div class="flex items-center space-x-2">
           <button
-            @click="downloadFile"
             class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            @click="downloadFile"
           >
             <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
               <path
@@ -60,8 +60,8 @@
           </button>
 
           <button
-            @click="shareFile"
             class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            @click="shareFile"
           >
             <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
               <path
@@ -104,8 +104,8 @@
         <p class="mt-1 text-sm text-gray-500">{{ error }}</p>
         <div class="mt-6">
           <button
-            @click="loadFile"
             class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            @click="loadFile"
           >
             Try again
           </button>
@@ -126,8 +126,8 @@
               </h3>
               <div class="flex space-x-2">
                 <button
-                  @click="openInNewTab"
                   class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  @click="openInNewTab"
                 >
                   <svg
                     class="w-4 h-4 mr-2"
@@ -141,8 +141,8 @@
                   Open in New Tab
                 </button>
                 <button
-                  @click="editFile"
                   class="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  @click="editFile"
                 >
                   <svg
                     class="w-4 h-4 mr-2"
@@ -179,8 +179,8 @@
               </p>
               <div class="mt-6">
                 <button
-                  @click="downloadFile"
                   class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  @click="downloadFile"
                 >
                   Download to Edit
                 </button>
@@ -216,8 +216,8 @@
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-lg font-medium text-gray-900">Text Content</h3>
               <button
-                @click="editText"
                 class="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                @click="editText"
               >
                 <svg
                   class="w-4 h-4 mr-2"
@@ -308,8 +308,8 @@
                   class="flex-1 border-gray-300 rounded-l-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 />
                 <button
-                  @click="copyShareUrl"
                   class="inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 rounded-r-md bg-gray-50 text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  @click="copyShareUrl"
                 >
                   <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
@@ -322,15 +322,15 @@
             </div>
             <div class="flex justify-end space-x-3">
               <button
-                @click="closeShareModal"
                 class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                @click="closeShareModal"
               >
                 Cancel
               </button>
               <button
                 v-if="!shareToken"
-                @click="generateShareToken"
                 class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                @click="generateShareToken"
               >
                 Generate Link
               </button>

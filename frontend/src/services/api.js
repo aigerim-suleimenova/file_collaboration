@@ -2,7 +2,9 @@ import axios from 'axios'
 
 // Create axios instance
 const api = axios.create({
-  baseURL: '/api/v1',
+  // VITE_API_BASE_URL is the backend origin (e.g. https://api.example.com), set at
+  // build time; empty means same origin (Vite dev proxy or a reverse proxy).
+  baseURL: `${(import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')}/api/v1`,
   headers: {
     'Content-Type': 'application/json',
   },

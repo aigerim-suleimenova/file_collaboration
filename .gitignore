@@ -305,9 +305,10 @@ test-websocket.html
 setup-node18.sh
 start-collab*.sh
 
-# Manual test files
+# Manual test files (the real suites under tests/ are committed)
 test_*.py
 test_*.sh
+!**/tests/test_*.py
 
 # Database
 *.db

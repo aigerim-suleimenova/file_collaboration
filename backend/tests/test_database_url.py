@@ -10,7 +10,11 @@ SECRET = "a-real-secret-value-1234567890"
 
 @pytest.fixture(autouse=True)
 def clean_env(monkeypatch):
-    for name in ("DATABASE_URL", "ENV", "ENVIRONMENT", "SECRET_KEY", "POSTGRES_PASSWORD"):
+    # CI sets POSTGRES_* for the real database; these tests rely on the defaults.
+    for name in (
+        "DATABASE_URL", "ENV", "ENVIRONMENT", "SECRET_KEY",
+        "POSTGRES_SERVER", "POSTGRES_PORT", "POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB",
+    ):
         monkeypatch.delenv(name, raising=False)
 
 

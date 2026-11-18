@@ -2,10 +2,11 @@ import warnings
 from typing import Annotated, Any, List, Literal
 
 from pydantic import (
+    AliasChoices,
     AnyUrl,
     BeforeValidator,
+    Field,
     HttpUrl,
-    PostgresDsn,
     computed_field,
     field_validator,
     model_validator,
@@ -32,6 +33,8 @@ class Settings(BaseSettings):
         env_file=".env",
         env_ignore_empty=True,
         extra="ignore",
+        # Never echo rejected values (passwords, URLs with credentials) in errors.
+        hide_input_in_errors=True,
     )
 
     # Must be set explicitly outside ENVIRONMENT=local (enforced below). Locally a fixed
@@ -49,7 +52,11 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     API_V1_STR: str = "/api/v1"
     FRONTEND_HOST: str = "http://localhost:3000"
-    ENVIRONMENT: Literal["local", "staging", "production"] = "local"
+    # ENV is accepted too, because older deployment guides told people to set it.
+    # ENVIRONMENT wins when both are set.
+    ENVIRONMENT: Literal["local", "staging", "production"] = Field(
+        default="local", validation_alias=AliasChoices("ENVIRONMENT", "ENV")
+    )
 
     BACKEND_CORS_ORIGINS: Annotated[list[AnyUrl] | str, BeforeValidator(parse_cors)] = (
         []
@@ -68,6 +75,24 @@ class Settings(BaseSettings):
     POSTGRES_USER: str = "postgres"
     POSTGRES_PASSWORD: str = "12345678"
     POSTGRES_DB: str = "file_collaboration_db"
+
+    # Optional full connection URL, as set by Render, Railway, Heroku and others.
+    # When set it replaces the POSTGRES_* variables above.
+    DATABASE_URL: str | None = None
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def _normalize_database_url(cls, value: Any) -> Any:
+        if value is None or (isinstance(value, str) and not value.strip()):
+            return None
+        value = value.strip()
+        scheme, sep, rest = value.partition("://")
+        if not sep or scheme not in ("postgres", "postgresql", "postgresql+psycopg2"):
+            raise ValueError(
+                "DATABASE_URL must be a PostgreSQL URL "
+                "(postgres://, postgresql:// or postgresql+psycopg2://)"
+            )
+        return f"postgresql+psycopg2://{rest}"
 
     # File collaboration settings
     MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
@@ -90,14 +115,18 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER_PASSWORD: str = "admin123"
 
     @computed_field
-    def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
-        return MultiHostUrl.build(
-            scheme="postgresql+psycopg2",
-            username=self.POSTGRES_USER,
-            password=self.POSTGRES_PASSWORD,
-            host=self.POSTGRES_SERVER,
-            port=self.POSTGRES_PORT,
-            path=self.POSTGRES_DB,
+    def SQLALCHEMY_DATABASE_URI(self) -> str:
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
+        return str(
+            MultiHostUrl.build(
+                scheme="postgresql+psycopg2",
+                username=self.POSTGRES_USER,
+                password=self.POSTGRES_PASSWORD,
+                host=self.POSTGRES_SERVER,
+                port=self.POSTGRES_PORT,
+                path=self.POSTGRES_DB,
+            )
         )
 
     SMTP_TLS: bool = True
@@ -127,7 +156,8 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def _enforce_non_default_secrets(self) -> Self:
         self._check_default_secret("SECRET_KEY", self.SECRET_KEY)
-        self._check_default_secret("POSTGRES_PASSWORD", self.POSTGRES_PASSWORD)
+        if not self.DATABASE_URL:  # POSTGRES_PASSWORD is unused when DATABASE_URL is set
+            self._check_default_secret("POSTGRES_PASSWORD", self.POSTGRES_PASSWORD)
 
         return self
 

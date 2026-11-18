@@ -14,19 +14,20 @@ The backend's start script (`backend/scripts/start.sh`) runs `alembic upgrade he
 
 | Variable | Required | Meaning |
 |---|---|---|
-| `ENVIRONMENT` | yes, in deployments | `local`, `staging` or `production`. Outside `local`, a missing or default `SECRET_KEY` stops the backend from starting. |
+| `ENVIRONMENT` | yes, in deployments | `local`, `staging` or `production`. Outside `local`, a missing or default `SECRET_KEY` stops the backend from starting. `ENV` is accepted as an alias; `ENVIRONMENT` wins if both are set. |
 | `SECRET_KEY` | yes, in deployments | Signs login and share tokens. Generate one with `python3 -c "import secrets; print(secrets.token_urlsafe(32))"`. Changing it logs everyone out. |
-| `POSTGRES_SERVER` | yes | Database host |
-| `POSTGRES_PORT` | yes | Database port (usually `5432`) |
-| `POSTGRES_USER` | yes | Database user |
-| `POSTGRES_PASSWORD` | yes | Database password |
-| `POSTGRES_DB` | yes | Database name |
+| `DATABASE_URL` | no | A full PostgreSQL URL (`postgres://`, `postgresql://` or `postgresql+psycopg2://`), as Render and Railway provide. When set, the `POSTGRES_*` variables below are ignored. |
+| `POSTGRES_SERVER` | yes, without `DATABASE_URL` | Database host |
+| `POSTGRES_PORT` | yes, without `DATABASE_URL` | Database port (usually `5432`) |
+| `POSTGRES_USER` | yes, without `DATABASE_URL` | Database user |
+| `POSTGRES_PASSWORD` | yes, without `DATABASE_URL` | Database password |
+| `POSTGRES_DB` | yes, without `DATABASE_URL` | Database name |
 | `FRONTEND_HOST` | yes | The frontend's origin, e.g. `https://app.example.com`. Allowed for CORS. |
 | `BACKEND_CORS_ORIGINS` | no | Extra comma-separated origins allowed for CORS |
 | `PORT` | no | Port to listen on (default `8000`). Most platforms set this. |
 | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `S3_BUCKET_NAME` | for uploads | S3 storage for uploaded files |
 
-The backend reads the separate `POSTGRES_*` variables. It does **not** read `DATABASE_URL` or `ENV`, so copy the host, port, user, password and database name from your provider's connection details.
+On Render or Railway, point `DATABASE_URL` at the provider's connection string (for example Railway's `${{Postgres.DATABASE_URL}}`). Otherwise set the separate `POSTGRES_*` variables.
 
 Run exactly **one** backend instance and worker. Collaboration rooms live in the process's memory, so all editors of a document must reach the same process.
 
@@ -65,13 +66,13 @@ docker compose -f docker-compose.prod.yml up -d --build
 
 Create three resources from the same repository and branch (`prod`).
 
-1. **PostgreSQL**: create a database. Its connection details provide the `POSTGRES_*` values; use the internal hostname for the backend.
+1. **PostgreSQL**: create a database. Copy its **Internal Database URL** for the backend.
 2. **Backend**, a Web Service with the Docker runtime:
    - **Root Directory:** `backend`
    - **Dockerfile Path:** `Dockerfile.prod`
    - **Build and Start Command:** leave empty (the Dockerfile runs migrations, then uvicorn)
    - **Health Check Path:** `/health`
-   - **Environment:** `ENVIRONMENT=production`, `SECRET_KEY`, the `POSTGRES_*` values, `FRONTEND_HOST=https://<frontend>.onrender.com`, and the S3 variables if you upload files
+   - **Environment:** `ENVIRONMENT=production`, `SECRET_KEY`, `DATABASE_URL` (the Internal Database URL), `FRONTEND_HOST=https://<frontend>.onrender.com`, and the S3 variables if you upload files
 3. **Frontend**, a Web Service with the Docker runtime:
    - **Root Directory:** `frontend`
    - **Dockerfile Path:** `Dockerfile.prod`
@@ -86,12 +87,12 @@ After changing a frontend variable, **redeploy the frontend**, because the value
 `railway.json` deploys the backend with Nixpacks and starts it with `cd backend && sh scripts/start.sh` (migrate, then uvicorn on `$PORT`). Its health check path is `/health`.
 
 1. Create a project from the GitHub repository, then add a PostgreSQL service.
-2. On the backend service, set `ENVIRONMENT=production`, `SECRET_KEY`, the `POSTGRES_*` values from the PostgreSQL service's variables, and `FRONTEND_HOST`. Enable public networking.
+2. On the backend service, set `ENVIRONMENT=production`, `SECRET_KEY`, `DATABASE_URL=${{Postgres.DATABASE_URL}}` (a reference to the PostgreSQL service's variable), and `FRONTEND_HOST`. Enable public networking.
 3. Deploy the frontend separately (for example on Render as above, or as another Railway service using `frontend/Dockerfile.prod`), with `VITE_API_BASE_URL` set to the backend's public URL.
 
 ## Checking a deployment
 
-- `GET https://<backend>/health` returns `{"status": "ok", "database": "ok"}`. A 503 means the backend can't reach the database: check the `POSTGRES_*` values.
+- `GET https://<backend>/health` returns `{"status": "ok", "database": "ok"}`. A 503 means the backend can't reach the database: check `DATABASE_URL` or the `POSTGRES_*` values.
 - Register, log in and upload a file through the frontend.
 - Open the same document in two browsers (owner + share link). Edits should appear in both. If the editor says "Collaboration server unavailable", check `VITE_API_BASE_URL` / `VITE_COLLAB_WS` and redeploy the frontend.
 - If the backend logs `SECRET_KEY is not set, so the development default is in use` and it won't start, set `SECRET_KEY`.

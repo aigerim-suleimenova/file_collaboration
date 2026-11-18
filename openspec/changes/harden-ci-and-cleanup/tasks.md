@@ -102,3 +102,8 @@
 - **Found, not fixed (outside this change):**
   - The backend ignores `DATABASE_URL`/`ENV`, which the old Render and Railway guides told you to set; `docs/deployment.md` now documents `POSTGRES_*`/`ENVIRONMENT`.
   - The README links to a `LICENSE` file that doesn't exist.
+- **Session 4 (2026-11-19), both findings above fixed on `feature/database-url-and-license`:**
+  - The backend now reads an optional `DATABASE_URL` (`postgres://`, `postgresql://` and `postgresql+psycopg2://` are normalized to psycopg2; anything else is rejected). When it is set, the `POSTGRES_*` variables are ignored. `ENV` is accepted as an alias for `ENVIRONMENT`, and `ENVIRONMENT` wins. Settings errors no longer echo the rejected values.
+  - An MIT `LICENSE` file was added.
+  - Verified: `tests/test_database_url.py` (12 tests) failed before the change and passes after it. Full suite on a throwaway PostgreSQL 14: 76 passed, coverage 78%. flake8 is clean. Alembic upgrade → check → downgrade → upgrade ran through `DATABASE_URL` alone, with `POSTGRES_SERVER` set to an unreachable host. `start.sh` with `ENV=production` + `DATABASE_URL` served `/health` → ok, and refused to start without `SECRET_KEY`.
+  - Docker Desktop is still not running, so 7.2, the local part of 8.2, and 10.1 stay open.
